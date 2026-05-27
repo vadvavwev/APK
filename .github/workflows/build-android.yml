@@ -29,6 +29,7 @@ jobs:
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          echo "PATH=/home/runner/.local/share/pnpm:$PATH" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
         uses: actions/cache@v4
@@ -38,20 +39,35 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
+      - name: Add pnpm to PATH
+        run: |
+          export PATH="$HOME/.local/share/pnpm:$HOME/.npm-global/bin:$PATH"
+          echo "PATH=$PATH" >> $GITHUB_ENV
+
       - name: Install dependencies
-        run: pnpm install --ignore-scripts
+        run: |
+          export PATH="$HOME/.local/share/pnpm:$HOME/.npm-global/bin:$PATH"
+          pnpm install --ignore-scripts
 
       - name: Add TypeScript
-        run: pnpm add -D typescript
+        run: |
+          export PATH="$HOME/.local/share/pnpm:$HOME/.npm-global/bin:$PATH"
+          pnpm add -D typescript
 
       - name: Build web app
-        run: pnpm build
+        run: |
+          export PATH="$HOME/.local/share/pnpm:$HOME/.npm-global/bin:$PATH"
+          pnpm build
 
       - name: Add Android platform
-        run: npx cap add android
+        run: |
+          export PATH="$HOME/.local/share/pnpm:$HOME/.npm-global/bin:$PATH"
+          npx cap add android
 
       - name: Sync to Android
-        run: npx cap sync android
+        run: |
+          export PATH="$HOME/.local/share/pnpm:$HOME/.npm-global/bin:$PATH"
+          npx cap sync android
 
       - name: Set up JDK
         uses: actions/setup-java@v4
