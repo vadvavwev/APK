@@ -9,12 +9,12 @@
     "preview": "vite preview",
     "cap:sync": "cap sync",
     "cap:open:android": "cap open android",
-    "build:apk": "pnpm build && cap sync android"
+    "build:apk": "vite build && cap sync android"
   },
   "dependencies": {
-    "@capacitor/android": "^8.3.4",
-    "@capacitor/cli": "^8.3.4",
-    "@capacitor/core": "^8.3.4",
+    "@capacitor/android": "6.2.1",
+    "@capacitor/cli": "6.2.1",
+    "@capacitor/core": "6.2.1",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@mui/icons-material": "7.3.5",
