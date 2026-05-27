@@ -1,0 +1,58 @@
+/* Mobile optimization styles */
+
+/* Prevent horizontal scroll on mobile */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Better touch targets for mobile */
+@media (pointer: coarse) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Optimize font rendering on mobile */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Prevent text size adjustment on orientation change */
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Better tap highlight color */
+* {
+  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Remove default margins on mobile */
+@media (max-width: 640px) {
+  body {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Improve form inputs on mobile */
+input, textarea, select {
+  font-size: 16px; /* Prevent zoom on iOS when focusing inputs */
+}
+
+/* Better focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid rgb(59 130 246);
+  outline-offset: 2px;
+}

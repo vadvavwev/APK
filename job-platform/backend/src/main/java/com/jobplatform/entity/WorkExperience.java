@@ -1,0 +1,70 @@
+package com.jobplatform.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.Data;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
+
+/**
+ * 工作经历实体
+ */
+@Data
+@Entity
+@Table(name = "work_experiences")
+@EntityListeners(AuditingEntityListener.class)
+public class WorkExperience {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /**
+     * 所属用户
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
+    private User user;
+
+    /**
+     * 公司名称
+     */
+    @Column(nullable = false, length = 100)
+    private String company;
+
+    /**
+     * 职位
+     */
+    @Column(nullable = false, length = 100)
+    private String position;
+
+    /**
+     * 工作描述
+     */
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    /**
+     * 开始时间（yyyy-MM格式）
+     */
+    @Column(nullable = false, length = 7)
+    private String startDate;
+
+    /**
+     * 结束时间（yyyy-MM格式）
+     */
+    @Column(nullable = false, length = 7)
+    private String endDate;
+
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+}
