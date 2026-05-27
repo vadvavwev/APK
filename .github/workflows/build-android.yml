@@ -7,67 +7,133 @@ on:
     branches: [main, master]
 
 env:
-  PNPM_STORE_DIR: ~/.pnpm-store
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+  JAVA_VERSION: '17'
+  ANDROID_SDK_BUILD_TOOLS: '35.0.0'
+  ANDROID_SDK_PLATFORM: '35'
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # ============================================
+      # 1. Checkout
+      # ============================================
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ============================================
+      # 2. Node.js setup
+      # ============================================
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
 
+      # ============================================
+      # 3. pnpm setup with fixed version
+      # ============================================
       - name: Install pnpm
-        run: npm install -g pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
 
+      # ============================================
+      # 4. Configure pnpm store location
+      # ============================================
       - name: Configure pnpm store location
-        run: pnpm config set store-dir ${{ env.PNPM_STORE_DIR }}
+        run: pnpm config set store-dir ~/.pnpm-store
 
+      # ============================================
+      # 5. pnpm cache (static path, no dynamic detection)
+      # ============================================
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
           path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            pnpm-store-${{ runner.os }}-
 
+      # ============================================
+      # 6. Install dependencies
+      # ============================================
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      # ============================================
+      # 7. Add TypeScript
+      # ============================================
       - name: Add TypeScript
         run: pnpm add -D typescript
 
+      # ============================================
+      # 8. Build web app
+      # ============================================
       - name: Build web app
         run: pnpm build
 
+      # ============================================
+      # 9. Add Android platform (only if not exists)
+      # ============================================
       - name: Add Android platform
+        if: steps.check-android.outputs.exists != 'true'
         run: npx cap add android
 
+      - name: Check if Android exists
+        id: check-android
+        run: echo "exists=$(test -d android && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+      # ============================================
+      # 10. Sync to Android
+      # ============================================
       - name: Sync to Android
         run: npx cap sync android
 
+      # ============================================
+      # 11. Set up JDK
+      # ============================================
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
 
+      # ============================================
+      # 12. Setup Android SDK
+      # ============================================
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          build-tools: ${{ env.ANDROID_SDK_BUILD_TOOLS }}
+          platform: ${{ env.ANDROID_SDK_PLATFORM }}
 
+      # ============================================
+      # 13. Build debug APK
+      # ============================================
       - name: Build debug APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon --warning-mode=all
 
+      # ============================================
+      # 14. Upload APK
+      # ============================================
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug.apk
+          name: app-debug-${{ github.sha }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+
+      # ============================================
+      # 15. Upload build reports on failure
+      # ============================================
+      - name: Upload build reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports-${{ github.sha }}
+          path: android/app/build/reports/**
+          retention-days: 7
