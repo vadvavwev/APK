@@ -19,13 +19,13 @@ jobs:
 
     steps:
       # ============================================
-      # 1. Checkout
+      # 1. Checkout code
       # ============================================
       - name: Checkout code
         uses: actions/checkout@v4
 
       # ============================================
-      # 2. Node.js setup
+      # 2. Setup Node.js (fixed version)
       # ============================================
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -33,16 +33,19 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       # ============================================
-      # 3. pnpm setup with fixed version
+      # 3. Install pnpm (fixed version)
       # ============================================
       - name: Install pnpm
         run: npm install -g pnpm@${{ env.PNPM_VERSION }}
 
       # ============================================
-      # 4. Configure pnpm store location
+      # 4. Configure pnpm for CI (no prompts)
       # ============================================
-      - name: Configure pnpm store location
-        run: pnpm config set store-dir ~/.pnpm-store
+      - name: Configure pnpm
+        run: |
+          pnpm config set store-dir ~/.pnpm-store
+          pnpm config set auto-install-peers false
+          pnpm config set enable-pre-post-scripts false
 
       # ============================================
       # 5. pnpm cache (static path, no dynamic detection)
@@ -56,42 +59,25 @@ jobs:
             pnpm-store-${{ runner.os }}-
 
       # ============================================
-      # 6. Install dependencies
+      # 6. Install dependencies ONLY (no pnpm add!)
       # ============================================
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
       # ============================================
-      # 7. Add TypeScript
-      # ============================================
-      - name: Add TypeScript
-        run: pnpm add -D typescript
-
-      # ============================================
-      # 8. Build web app
+      # 7. Build web app
       # ============================================
       - name: Build web app
         run: pnpm build
 
       # ============================================
-      # 9. Add Android platform (only if not exists)
-      # ============================================
-      - name: Add Android platform
-        if: steps.check-android.outputs.exists != 'true'
-        run: npx cap add android
-
-      - name: Check if Android exists
-        id: check-android
-        run: echo "exists=$(test -d android && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-
-      # ============================================
-      # 10. Sync to Android
+      # 8. Sync to Android
       # ============================================
       - name: Sync to Android
         run: npx cap sync android
 
       # ============================================
-      # 11. Set up JDK
+      # 9. Set up JDK (fixed version)
       # ============================================
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -100,7 +86,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       # ============================================
-      # 12. Setup Android SDK
+      # 10. Setup Android SDK (fixed version)
       # ============================================
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -109,7 +95,7 @@ jobs:
           platform: ${{ env.ANDROID_SDK_PLATFORM }}
 
       # ============================================
-      # 13. Build debug APK
+      # 11. Build debug APK
       # ============================================
       - name: Build debug APK
         run: |
@@ -118,22 +104,11 @@ jobs:
           ./gradlew assembleDebug --no-daemon --warning-mode=all
 
       # ============================================
-      # 14. Upload APK
+      # 12. Upload APK artifact
       # ============================================
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-${{ github.sha }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 7
-
-      # ============================================
-      # 15. Upload build reports on failure
-      # ============================================
-      - name: Upload build reports on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-reports-${{ github.sha }}
-          path: android/app/build/reports/**
           retention-days: 7
