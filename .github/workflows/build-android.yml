@@ -45,7 +45,6 @@ jobs:
         run: |
           pnpm config set store-dir ~/.pnpm-store
           pnpm config set auto-install-peers false
-          pnpm config set enable-pre-post-scripts false
 
       # ============================================
       # 5. pnpm cache (static path, no dynamic detection)
@@ -65,10 +64,10 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       # ============================================
-      # 7. Build web app
+      # 7. Build web app (use npx to bypass pnpm hooks)
       # ============================================
       - name: Build web app
-        run: pnpm build
+        run: npx vite build
 
       # ============================================
       # 8. Sync to Android
