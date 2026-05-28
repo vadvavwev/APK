@@ -5,6 +5,7 @@ const config: CapacitorConfig = {
   appName: '职聘宝',
   webDir: 'dist',
   server: {
+    hostname: '121.196.173.80',
     androidScheme: 'https'
   },
   android: {

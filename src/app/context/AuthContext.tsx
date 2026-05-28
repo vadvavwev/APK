@@ -1,10 +1,17 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+/**
+ * Auth Context with Real API Integration
+ */
+
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import type { User } from '../types';
+import { authApi } from '../api/authApi';
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
   login: (phone: string, password: string) => Promise<boolean>;
-  register: (phone: string, password: string) => Promise<boolean>;
+  register: (phone: string, password: string, name?: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (user: User) => void;
 }
@@ -13,62 +20,75 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    // 从localStorage恢复用户状态
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  const login = async (phone: string, password: string): Promise<boolean> => {
-    // 模拟登录API调用
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // 模拟验证（实际应该调用后端API）
-    if (password === '123456') {
-      const mockUser: User = {
-        id: '1',
-        phone,
-        name: '张三',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
-        desiredPosition: 'Frontend Developer',
-        city: '北京',
-        expectedSalary: '15k-25k'
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('token');
+  });
+
+  const login = useCallback(async (phone: string, password: string): Promise<boolean> => {
+    try {
+      const response = await authApi.login({ phone, password });
+
+      // Store tokens
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('refreshToken', response.refreshToken);
+
+      // Store user info
+      const userData: User = {
+        id: response.user.id.toString(),
+        phone: response.user.phone,
+        name: response.user.name,
+        avatar: response.user.avatar || '',
       };
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      setToken(response.token);
+      setUser(userData);
+
       return true;
+    } catch (error) {
+      console.error('Login failed:', error);
+      return false;
     }
-    return false;
-  };
+  }, []);
 
-  const register = async (phone: string, password: string): Promise<boolean> => {
-    // 模拟注册API调用
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const mockUser: User = {
-      id: Date.now().toString(),
-      phone,
-      name: '新用户',
-      desiredPosition: '',
-      city: '',
-      expectedSalary: ''
-    };
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    return true;
-  };
+  const register = useCallback(async (phone: string, password: string, name?: string): Promise<boolean> => {
+    try {
+      await authApi.register({ phone, password, name });
+      // Auto login after registration
+      return await login(phone, password);
+    } catch (error) {
+      console.error('Register failed:', error);
+      return false;
+    }
+  }, [login]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
+    authApi.logout();
     setUser(null);
-    localStorage.removeItem('user');
-  };
+    setToken(null);
+  }, []);
 
-  const updateUser = (updatedUser: User) => {
+  const updateUser = useCallback((updatedUser: User) => {
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
-  };
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isAuthenticated: !!token,
+        login,
+        register,
+        logout,
+        updateUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
